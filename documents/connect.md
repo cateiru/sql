@@ -12,7 +12,15 @@
 
   ```bash
   toruch .env
+
+  # CloudSQLの接続名
   echo "CLOUDSQL_INSTANCE_CONNECTION_NAME=[Your cloudsql instance connection name]" > .env
+
+  # mysql user
+  echo "MYSQL_USER=[mysql user]" >> .env
+
+  # mysql password
+  echo "MYSQL_PASSWORD=[mysql password]" >> .env
   ```
 
 - `config/sa_key.json`を追加する
@@ -27,5 +35,5 @@ docker-compose up
 ### Connection DB
 
 ```bash
- mysql -h 127.0.0.1 -u root -p
+./scripts/sql.sh
 ```
