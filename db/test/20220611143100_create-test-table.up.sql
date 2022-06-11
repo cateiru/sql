@@ -1,3 +1,3 @@
-CREATE TABLE test(
+CREATE TBLE test(
     test_id INT
 );
