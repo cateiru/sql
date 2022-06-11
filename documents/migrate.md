@@ -24,3 +24,9 @@ brew install golang-migrate
 ```bash
 migrate create -ext sql -dir ./db/[table name] [migrate operation name]
 ```
+
+## MIGRATE
+
+```bash
+./scripts/migrations.sh
+```
