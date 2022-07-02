@@ -10,7 +10,7 @@ jobs:
       
       - name: Setup Env
         run: |
-          echo "MTSQL_USER=root" > .env
+          echo "MYSQL_USER=root" > .env
           echo "MYSQL_PASSWORD=password" >> .env
       
       - name: Run local MySQL Server
