@@ -1,0 +1,27 @@
+name: Check mgrations
+
+on: pull_request
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      
+      - name: Setup Env
+        run: |
+          echo "MYSQL_USER=root" > .env
+          echo "MYSQL_PASSWORD=password" >> .env
+      
+      - name: Run local MySQL Server
+        run: ./scripts/start_local.sh -d
+      
+      - name: Install migrate
+        run: |
+          curl -L https://packagecloud.io/golang-migrate/migrate/gpgkey | sudo apt-key add -
+          echo "deb https://packagecloud.io/golang-migrate/migrate/ubuntu/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/migrate.list
+          sudo apt-get update
+          sudo apt-get install -y migrate
+      
+      - name: migration
+        run: ./scripts/migrations.sh

@@ -81,3 +81,6 @@ $RECYCLE.BIN/
 config/**
 !config/.gitkeep
 .env
+
+local/data/**
+!local/data/.gitkeep
