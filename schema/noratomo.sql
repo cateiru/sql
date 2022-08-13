@@ -194,11 +194,11 @@ CREATE TABLE IF NOT EXISTS `ban` (
 -- 野良認証のセッション情報
 
 CREATE TABLE IF NOT EXISTS `nora_session` (
-    `token` INT UNSIGNED NOT NULL,
-    `total_questions` SMALLINT NOT NULL,
-    `current_question` SMALLINT NOT NULL,
-    `score` INT UNSIGNED NOT NULL,
+    `token` CHAR(64) NOT NULL,
     `question_ids` TEXT NOT NULL,
+
+    `created` DATETIME NOT NULL,
+    `period_date` DATETIME NOT NULL,
     PRIMARY KEY (`token`)
 );
 
@@ -229,6 +229,13 @@ CREATE EVENT IF NOT EXISTS clear_refresh_session
     COMMENT 'clear refresh sessions table'
     DO
         DELETE FROM refresh WHERE period_date < NOW();
+
+CREATE EVENT IF NOT EXISTS clear_nora_session
+    ON SCHEDULE
+        EVERY 1 HOUR
+    COMMENT 'clear nora question session'
+    DO
+        DELETE FROM nora_session WHERE period_date < NOW();
 
 -- index
 
