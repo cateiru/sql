@@ -1,1 +1,1 @@
-DROP INDEX `application_shop_id_index`;
+DROP INDEX `application_shop_id_index` ON application;
