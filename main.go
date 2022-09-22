@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/schemalex/schemalex/diff"
 )
@@ -20,6 +21,9 @@ var TargetDirName string = "schema"
 func main() {
 	flag.Parse()
 	migrateName := flag.Arg(0)
+	if migrateName == "" {
+		log.Fatal("migration name is failed\nusage:\n\tgo run . [migration name]\n\n")
+	}
 
 	tmpDir, err := filepath.Abs(TmpDirName)
 	if err != nil {
@@ -79,7 +83,8 @@ func Execute(path string, tmpDir string, migrateName string) error {
 		return err
 	}
 
-	if err := CreateMigration(path, diffBody, migrateName); err != nil {
+	name := filepath.Base(path[:len(path)-len(filepath.Ext(path))])
+	if err := CreateMigration(name, diffBody, migrateName); err != nil {
 		return err
 	}
 
@@ -125,12 +130,16 @@ func Diff(current string, target string) (string, error) {
 }
 
 func CreateMigration(filename string, diffBody string, migrateName string) error {
-
-	out, err := exec.Command(fmt.Sprintf("migrate create -ext sql -dir ./db/%s %s", filename, migrateName)).Output()
+	cmd := exec.Command("migrate", "create", "-ext", "sql", "-dir", fmt.Sprintf("./db/%s", filename), migrateName)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
-	fmt.Println(out)
 
-	return nil
+	// len.0: up, len.1: down
+	exportFiles := strings.Split(stderr.String(), "\n")
+
+	return os.WriteFile(exportFiles[0], []byte(diffBody), 0664)
 }
