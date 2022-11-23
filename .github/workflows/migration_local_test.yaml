@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: supplypike/setup-bin@v1
+        with:
+          uri: 'https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz'
+          name: 'migrate'
+          version: 'v4.15.2'
 
       - name: Setup Env
         run: |
@@ -15,12 +20,11 @@ jobs:
       
       - name: Run local MySQL Server
         run: ./scripts/start_local.sh up -d
-
-      - uses: supplypike/setup-bin@v1
+        
+      - name: Sleep for 10 seconds
+        uses: jakejarvis/wait-action@master
         with:
-          uri: 'https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz'
-          name: 'migrate'
-          version: 'v4.15.2'
+          time: '10s'
 
       - name: migration
         run: ./scripts/migrations.sh
