@@ -12,17 +12,17 @@ CREATE TABLE `biographies` (
     PRIMARY KEY (`id`),
     INDEX `biography_user_id` (`user_id`),
     INDEX `biography_user_id_join` (`user_id`, `join`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `categories` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `name` text NOT NULL,
     `name_ja` text NOT NULL,
-    `emoji` char(1) NOT NULL,
+    `emoji` varchar(15) NOT NULL,
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `contacts` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -45,7 +45,7 @@ CREATE TABLE `contacts` (
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `contact_to_user_id` (`to_user_id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `links` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -53,13 +53,13 @@ CREATE TABLE `links` (
     `name` text NOT NULL,
     `name_ja` text NOT NULL,
     `site_url` text NOT NULL,
-    `favicon_url` text NOT NULL,
+    `favicon_url` text NULL,
     `category_id` int unsigned NOT NULL,
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `link_user_id` (`user_id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `locations` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -71,7 +71,7 @@ CREATE TABLE `locations` (
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `notices` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -83,7 +83,7 @@ CREATE TABLE `notices` (
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE INDEX `user_id` (`user_id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `products` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -101,7 +101,7 @@ CREATE TABLE `products` (
     PRIMARY KEY (`id`),
     INDEX `product_user_id` (`user_id`),
     INDEX `product_user_id_dev_time` (`user_id`, `dev_time`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `sessions` (
     `session_token` char(36) NOT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE `sessions` (
     `period` datetime NOT NULL,
     PRIMARY KEY (`session_token`),
     INDEX `session_user_id` (`user_id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);
 
 CREATE TABLE `users` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -129,4 +129,4 @@ CREATE TABLE `users` (
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) CHARSET utf8mb4 COLLATE utf8mb4_bin;
+);

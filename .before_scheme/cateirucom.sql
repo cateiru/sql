@@ -18,7 +18,7 @@ CREATE TABLE `categories` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `name` text NOT NULL,
     `name_ja` text NOT NULL,
-    `emoji` char(1) NOT NULL,
+    `emoji` varchar(15) NOT NULL,
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
@@ -53,7 +53,7 @@ CREATE TABLE `links` (
     `name` text NOT NULL,
     `name_ja` text NOT NULL,
     `site_url` text NOT NULL,
-    `favicon_url` text NOT NULL,
+    `favicon_url` text NULL,
     `category_id` int unsigned NOT NULL,
     `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
