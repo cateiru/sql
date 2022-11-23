@@ -18,7 +18,8 @@ jobs:
       
       - name: Install migrate
         run: |
-          go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
+          mv ./migrate /user/bin/
       
       - name: migration
         run: ./scripts/migrations.sh
