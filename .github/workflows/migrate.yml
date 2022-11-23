@@ -25,10 +25,7 @@ jobs:
 
       - name: Install migrate
         run: |
-          curl -L https://packagecloud.io/golang-migrate/migrate/gpgkey | sudo apt-key add -
-          echo "deb https://packagecloud.io/golang-migrate/migrate/ubuntu/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/migrate.list
-          sudo apt-get update
-          sudo apt-get install -y migrate
+          curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.$platform-amd64.tar.gz | tar xvz
 
       - name: Migrate DB (up)
         run: ./scripts/migrations.sh
