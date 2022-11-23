@@ -7,7 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      
+      - uses: supplypike/setup-bin@v1
+        with:
+          uri: 'https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz'
+          name: 'migrate'
+          version: 'v4.15.2'
+
       - name: Setup Env
         run: |
           echo "MYSQL_USER=root" > .env
@@ -15,13 +20,11 @@ jobs:
       
       - name: Run local MySQL Server
         run: ./scripts/start_local.sh up -d
-      
-      - name: Install migrate
-        run: |
-          curl -L https://packagecloud.io/golang-migrate/migrate/gpgkey | sudo apt-key add -
-          echo "deb https://packagecloud.io/golang-migrate/migrate/ubuntu/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/migrate.list
-          sudo apt-get update
-          sudo apt-get install -y migrate
-      
+        
+      - name: Sleep for 10 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '10s'
+
       - name: migration
         run: ./scripts/migrations.sh
