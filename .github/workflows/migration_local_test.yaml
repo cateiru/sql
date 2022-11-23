@@ -18,7 +18,7 @@ jobs:
       
       - name: Install migrate
         run: |
-          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
       
       - name: migration
         run: ./scripts/migrations.sh
