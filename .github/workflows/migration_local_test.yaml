@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: supplypike/setup-bin@v1
+        with:
+          uri: 'https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz'
+          name: 'migrate'
       
       - name: Setup Env
         run: |
@@ -15,11 +19,6 @@ jobs:
       
       - name: Run local MySQL Server
         run: ./scripts/start_local.sh up -d
-      
-      - name: Install migrate
-        run: |
-          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
-          mv ./migrate /user/bin/
       
       - name: migration
         run: ./scripts/migrations.sh
