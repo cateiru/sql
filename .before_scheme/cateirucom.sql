@@ -31,7 +31,7 @@ CREATE TABLE `contacts` (
     `title` text NOT NULL,
     `detail` text NOT NULL,
     `mail` text NOT NULL,
-    `ip` varchar(16) NOT NULL,
+    `ip` varchar(63) NOT NULL,
     `lang` text NOT NULL,
     `url` text NULL,
     `category` text NULL,

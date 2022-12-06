@@ -1,0 +1,2 @@
+ALTER TABLE
+    `contacts` CHANGE COLUMN `ip` `ip` VARCHAR (63) NOT NULL;
