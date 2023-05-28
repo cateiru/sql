@@ -7,7 +7,7 @@ source ./.env
 for DATABASE_PATH in $FILES; do
   DATABASE=${DATABASE_PATH##*/}
 
-  mysql -h 127.0.0.1 -u $MYSQL_USER -p$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS ${DATABASE};"
+  mysql -h 127.0.0.1 -u $MYSQL_USER -p$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS `${DATABASE}`;"
 
   echo "------- Migration DB: ${DATABASE} -------"
 
