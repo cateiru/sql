@@ -63,7 +63,7 @@ CREATE TABLE `setting` (
 
 -- ブランドテーブル
 CREATE TABLE `brand` (
-    `id` VARCHAR(31) NOT NULL,
+    `id` VARCHAR(32) NOT NULL,
 
     `name` TEXT NOT NULL,
 
@@ -78,10 +78,11 @@ CREATE TABLE `brand` (
 
 CREATE TABLE `user_brand` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
     `user_id` VARCHAR(32) NOT NULL,
 
     -- ブランドID
-    `brand_id` VARCHAR(31) NOT NULL,
+    `brand_id` VARCHAR(32) NOT NULL,
 
     -- 管理用
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -90,7 +91,9 @@ CREATE TABLE `user_brand` (
     FOREIGN KEY (`brand_id`) REFERENCES `brand` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
     PRIMARY KEY (`id`),
-    INDEX `brand_user_id` (`user_id`)
+    INDEX `brand_user_id` (`user_id`),
+    INDEX `brand_brand_id` (`brand_id`),
+    UNIQUE INDEX `brand_user_brand` (`user_id`, `brand_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- スタッフテーブル
@@ -181,7 +184,8 @@ CREATE TABLE `otp_backup` (
     FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
     PRIMARY KEY (`id`),
-    INDEX `otp_backup_user_id` (`user_id`)
+    INDEX `otp_backup_user_id` (`user_id`),
+    UNIQUE INDEX `otp_backup_user_code` (`user_id`, `code`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- アカウント登録時に使用するセッションを保存するテーブル
@@ -199,6 +203,9 @@ CREATE TABLE `register_session` (
 
     -- コードを入力した回数
     `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+
+    -- orgの招待を受けてアカウントを作成する場合に使用する
+    `org_id` VARCHAR(32) DEFAULT NULL,
 
     -- 有効期限
     `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -324,7 +331,8 @@ CREATE TABLE `refresh` (
     PRIMARY KEY(`id`),
     INDEX `refresh_user_id` (`user_id`),
     UNIQUE INDEX `refresh_history_id` (`history_id`),
-    UNIQUE INDEX `refresh_session_id` (`session_id`)
+    UNIQUE INDEX `refresh_session_id` (`session_id`),
+    INDEX `refresh_id_period` (`id`, `period`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- パスワードによる認証は成功して次にOTPを求める場合のセッションを保存するテーブル
@@ -463,11 +471,19 @@ CREATE TABLE `client` (
     -- クライアントのイメージ
     `image` TEXT DEFAULT NULL,
 
+    -- orgで作成したものであれば、ここにorgのIDが入る
+    -- 個人で作成したものはnullになる
+    `org_id` VARCHAR(32) DEFAULT NULL,
+
+    -- org_idが設定されている場合にこのフラグがtrueだと、orgのメンバーのみが利用できるようになる
+    `org_member_only` BOOLEAN NOT NULL DEFAULT 0,
+
     -- ホワイトリストを使用するかどうか
     `is_allow` BOOLEAN NOT NULL DEFAULT 0,
     -- OAuthの認証リクエスト時にログイン、2faログインを求めることを強制する
     `prompt` ENUM('login', '2fa_login') DEFAULT NULL,
 
+    -- 作成者
     `owner_user_id` VARCHAR(32) NOT NULL,
 
     -- OAuth2.0のClient Secret
@@ -480,7 +496,49 @@ CREATE TABLE `client` (
     FOREIGN KEY (`owner_user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
     PRIMARY KEY (`client_id`),
-    INDEX `client_owner_user_id` (`owner_user_id`)
+    INDEX `client_owner_user_id` (`owner_user_id`),
+    INDEX `client_owner_user_id_client_id` (`owner_user_id`, `client_id`),
+    INDEX `client_org_id` (`org_id`),
+    INDEX `client_org_id_client_id` (`org_id`, `client_id`),
+    INDEX `client_org_id_client_id_owner_user_id` (`org_id`, `client_id`, `owner_user_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- クライアントのリダイレクトURLを設定するテーブル
+CREATE TABLE `client_redirect` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    -- クライアントのID
+    `client_id` VARCHAR(31) NOT NULL,
+
+    `host` VARCHAR(128) NOT NULL,
+    `url` TEXT NOT NULL,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY (`id`),
+    INDEX `client_redirect_client_id` (`client_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- クライアントのリファラーURLを設定するテーブル
+CREATE TABLE `client_referrer` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    -- クライアントのID
+    `client_id` VARCHAR(31) NOT NULL,
+
+    `host` VARCHAR(128) NOT NULL,
+    `url` TEXT NOT NULL,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY (`id`),
+    INDEX `client_redirect_client_id` (`client_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- OAuthで接続したときのセッション
@@ -532,6 +590,8 @@ CREATE TABLE `client_scope` (
 
 -- クライアントのis_allowが1のときのホワイトリストルール
 CREATE TABLE `client_allow_rule` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
     `client_id` VARCHAR(31) NOT NULL,
 
     -- user_idが指定されている場合、そのユーザのみを通過させる
@@ -545,7 +605,11 @@ CREATE TABLE `client_allow_rule` (
 
     FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
-    PRIMARY KEY (`client_id`)
+    PRIMARY KEY (`id`),
+    INDEX `client_allow_rule_client_id` (`client_id`),
+    UNIQUE INDEX `client_allow_rule_user_id_client_id` (`client_id`, `user_id`),
+    UNIQUE INDEX `client_allow_rule_email_domain_client_id` (`client_id`, `email_domain`),
+    UNIQUE INDEX `client_allow_rule_user_id_email_domain_client_id` (`client_id`, `user_id`, `email_domain`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- 過去にログインしたSSOクライアントのテーブル
@@ -571,7 +635,8 @@ CREATE TABLE `login_client_history` (
 
     PRIMARY KEY (`id`),
     INDEX `login_client_history_client_id` (`client_id`),
-    INDEX `login_client_history_user_id` (`user_id`)
+    INDEX `login_client_history_user_id` (`user_id`),
+    INDEX `login_client_history_client_id_user_id` (`client_id`, `user_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- ログイン履歴
@@ -663,5 +728,75 @@ CREATE TABLE `broadcast_notice` (
     PRIMARY KEY (`id`),
     INDEX `broadcast_notice_entry_id` (`entry_id`),
     INDEX `broadcast_notice_user_id` (`user_id`),
-    INDEX `broadcast_notice_user_id_is_read` (`user_id`, `is_read`)
+    INDEX `broadcast_notice_user_id_is_read` (`user_id`, `is_read`),
+    UNIQUE INDEX `broadcast_notice_entry_id_user_id` (`entry_id`, `user_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- 組織
+CREATE TABLE `organization` (
+    `id` VARCHAR(32) NOT NULL,
+
+    -- 組織名
+    `name` VARCHAR(128) NOT NULL,
+    `image` TEXT DEFAULT NULL,
+    `link` TEXT DEFAULT NULL,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- 組織に所属するユーザー
+CREATE TABLE `organization_user` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    `organization_id` VARCHAR(32) NOT NULL,
+    `user_id` VARCHAR(32) NOT NULL,
+
+    -- owner: 管理者。このユーザーは組織から脱退することができない。
+    -- member: クライアントの作成・編集が可能なユーザー
+    -- guest: クライアントにログインすることのみが可能なユーザー
+    `role` ENUM('owner', 'member', 'guest') NOT NULL DEFAULT 'guest',
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY (`id`),
+    INDEX `organization_user_organization_id` (`organization_id`),
+    INDEX `organization_user_user_id` (`user_id`),
+    UNIQUE INDEX `organization_user_organization_id_user_id` (`organization_id`, `user_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- Org招待メールのセッション
+CREATE TABLE `invite_org_session` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    `token` VARCHAR(31) NOT NULL,
+
+    -- 同一ユーザーに複数メールを送信できるようにUNIQUEではない
+    `email` VARCHAR(255) NOT NULL,
+
+    -- 有効期限
+    `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- orgの招待の場合はorg_idが付与される
+    -- 現状、orgの招待しかないのでNOT NULLにしている
+    `org_id` VARCHAR(32) NOT NULL,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`org_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY(`id`),
+    UNIQUE INDEX `invite_org_session_token` (`token`),
+    INDEX `invite_email_session_email` (`email`),
+    INDEX `invite_email_session_org_id` (`org_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
