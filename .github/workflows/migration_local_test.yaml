@@ -6,25 +6,24 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: supplypike/setup-bin@v1
+      - uses: actions/checkout@v3
+      - uses: supplypike/setup-bin@v3
         with:
-          uri: 'https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz'
-          name: 'migrate'
-          version: 'v4.15.2'
+          uri: "https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz"
+          name: "migrate"
+          version: "v4.15.2"
 
       - name: Setup Env
         run: |
           echo "MYSQL_USER=root" > .env
           echo "MYSQL_PASSWORD=password" >> .env
-      
+
       - name: Run local MySQL Server
         run: ./scripts/start_local.sh up -d
-        
+
       - name: Sleep for 10 seconds
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '10s'
+        run: sleep 10s
+        shell: bash
 
       - name: migration
         run: ./scripts/migrations.sh
