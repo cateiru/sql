@@ -9,7 +9,7 @@ CREATE TABLE `user` (
     -- ログイン時にメールアドレスの代替としてログインできる
     -- アカウント登録時に、デフォルトはUUIDからランダムな文字列を作って入れる
     -- 検索する際にはutf8mb4_general_ciのコレクションを使用する
-    `user_name` VARCHAR(15) NOT NULL DEFAULT (LEFT(UUID(), 8)) COLLATE utf8_general_ci,
+    `user_name` VARCHAR(15) NOT NULL COLLATE utf8_general_ci,
 
     -- Email
     `email` VARCHAR(255) NOT NULL,
@@ -112,6 +112,24 @@ CREATE TABLE `staff` (
     FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
     PRIMARY KEY (`user_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- ユーザー名保存
+CREATE TABLE `user_name` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    `user_name` VARCHAR(15) NOT NULL COLLATE utf8_general_ci,
+
+    `user_id` VARCHAR(32) NOT NULL,
+
+    `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    INDEX `user_name_user_name_id_period` (`user_name`, `user_id`, `period`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- WebAuthnを保存するテーブル
@@ -357,30 +375,28 @@ CREATE TABLE `otp_session` (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- SSOクライアントのセッショントークンテーブル
+-- これを使用して UserInfo Endpoint を取得可能
 CREATE TABLE `client_session` (
-    -- ランダムにトークンを生成する
     `id` VARCHAR(31) NOT NULL,
     `user_id` VARCHAR(32) NOT NULL,
 
     -- クライアントのID
     `client_id` VARCHAR(31) NOT NULL,
-    `login_client_id` INT UNSIGNED NOT NULL,
 
     -- 有効期限
     `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- 管理用
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
-    PRIMARY KEY(`id`),
-    INDEX `client_session_user_id` (`user_id`),
-    INDEX `client_session_client_id` (`client_id`),
-    INDEX `client_session_login_client_id` (`login_client_id`)
+    PRIMARY KEY(`id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
 
 -- SSOクライアントのリフレッシュトークンテーブル
+-- 更新は Token Endpoint を使用する
 CREATE TABLE `client_refresh` (
     -- ランダムにトークンを生成する
     `id` VARCHAR(63) NOT NULL,
@@ -403,6 +419,7 @@ CREATE TABLE `client_refresh` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (`session_id`) REFERENCES `client_session` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
 
     PRIMARY KEY(`id`),
     INDEX `client_refresh_user_id` (`user_id`),
@@ -550,9 +567,11 @@ CREATE TABLE `oauth_session` (
     -- クライアントのID
     `client_id` VARCHAR(31) NOT NULL,
 
-    -- CSRF, XSRFで使用される`state`を格納するやつ
-    `state` VARCHAR(31) DEFAULT NULL,
+    -- CSRF, XSRFで使用される`nonce.`を格納するやつ
     `nonce` VARCHAR(31) DEFAULT NULL,
+
+    -- 認証が発生した時刻
+    `auth_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- 有効期限
     `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -799,4 +818,52 @@ CREATE TABLE `invite_org_session` (
     UNIQUE INDEX `invite_org_session_token` (`token`),
     INDEX `invite_email_session_email` (`email`),
     INDEX `invite_email_session_org_id` (`org_id`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- oauth 未ログインや `prompt=login` 時の一次保存セッション
+CREATE TABLE `oauth_login_session` (
+    `token` VARCHAR(31) NOT NULL,
+
+    `client_id` VARCHAR(31) NOT NULL,
+
+    `referrer_host` VARCHAR(128) DEFAULT NULL,
+
+    `login_ok` BOOLEAN NOT NULL DEFAULT 0,
+
+    -- 有効期限
+    `period` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY(`token`)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
+
+-- 行動履歴
+CREATE TABLE `operation_history` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` VARCHAR(32) NOT NULL,
+
+    -- 使用した端末のUA
+    `device` VARCHAR(31) DEFAULT NULL,
+    `os` VARCHAR(31) DEFAULT NULL,
+    `browser` VARCHAR(31) DEFAULT NULL,
+    `is_mobile` BOOLEAN DEFAULT NULL,
+
+    -- INET6_ATON、INET6_NTOAを使用して格納する
+    `ip` VARBINARY(16) NOT NULL,
+
+    -- 識別子
+    `identifier` TINYINT NOT NULL DEFAULT 0,
+
+    -- 管理用
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    PRIMARY KEY (`id`),
+    INDEX `operation_history_user_id` (`user_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ENGINE=InnoDB;
